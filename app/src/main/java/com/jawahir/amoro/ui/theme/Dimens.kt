@@ -21,4 +21,8 @@ object Dimens {
 
     // Chip
     val ChipWidth      = 120.dp
+
+    // Progress Indicators
+    val ProgressSize      = 24.dp
+    val ProgressStroke    = 2.dp
 }

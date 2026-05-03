@@ -83,6 +83,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    // Shimmer
+    implementation(libs.compose.shimmer)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
