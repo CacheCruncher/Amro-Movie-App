@@ -1,3 +1,38 @@
 <resources>
     <string name="app_name">AMORO</string>
+
+    <!-- Trending screen -->
+    <string name="trending_title">Trending</string>
+    <string name="sort_ascending">↑ Ascending</string>
+    <string name="sort_descending">↓ Descending</string>
+    <string name="genre_all">All</string>
+    <string name="genre_label">Genre</string>
+    <string name="no_movies_found">No movies found</string>
+    <string name="checkmark_prefix">✓  %s</string>
+
+    <!-- Sort options -->
+    <string name="sort_popularity">Popularity</string>
+    <string name="sort_title">Title</string>
+    <string name="sort_release_date">Release date</string>
+
+    <!-- Error -->
+    <string name="error_title">Something went wrong</string>
+    <string name="error_retry">Retry</string>
+    <string name="error_server">Server error (%d)</string>
+    <string name="error_network">No internet connection</string>
+
+    <!-- Detail screen -->
+    <string name="detail_status">Status</string>
+    <string name="detail_release_date">Release date</string>
+    <string name="detail_runtime">Runtime</string>
+    <string name="detail_budget">Budget</string>
+    <string name="detail_revenue">Revenue</string>
+    <string name="detail_imdb">View on IMDB</string>
+    <string name="detail_votes">(%d votes)</string>
+    <string name="detail_runtime_format">%d min</string>
+
+    <string name="detail_back">Back</string>
+    <string name="detail_rating">★ %.1f</string>
+    <string name="detail_backdrop_description">Backdrop for %s</string>
+
 </resources>

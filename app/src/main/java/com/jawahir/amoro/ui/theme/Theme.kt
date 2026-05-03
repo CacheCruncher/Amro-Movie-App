@@ -12,32 +12,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = CinemaRed,
+    onPrimary = White,
+    secondary = Grey400,
+    onSecondary = Grey900,
+    background = Brand900,
+    onBackground = White,
+    surface = Brand800,
+    onSurface = White,
+    surfaceVariant = Brand700,
+    onSurfaceVariant = Grey100,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = CinemaRed,
+    onPrimary = White,
+    secondary = Grey600,
+    onSecondary = White,
+    background = Grey100,
+    onBackground = Grey900,
+    surface = White,
+    onSurface = Grey900,
+    surfaceVariant = Grey100,
+    onSurfaceVariant = Grey800,
 )
 
 @Composable
 fun AMOROTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
