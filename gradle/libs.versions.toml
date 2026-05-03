@@ -32,7 +32,10 @@ espressoCore          = "3.7.0"
 mockk                 = "1.13.17"
 coroutinesTest        = "1.10.2"
 turbine               = "1.2.0"
-foundation = "1.11.0"
+foundation            = "1.11.0"
+
+#secrets
+secretsPlugin         = "2.0.1"
 
 [libraries]
 # AndroidX core
@@ -84,8 +87,9 @@ turbine                              = { group = "app.cash.turbine",           n
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
-android-application     = { id = "com.android.application",                     version.ref = "agp" }
-kotlin-compose          = { id = "org.jetbrains.kotlin.plugin.compose",         version.ref = "kotlin" }
-kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization",   version.ref = "kotlin" }
-hilt-android            = { id = "com.google.dagger.hilt.android",              version.ref = "hilt" }
-ksp                     = { id = "com.google.devtools.ksp",                     version.ref = "ksp" }
+android-application     = { id = "com.android.application",                                         version.ref = "agp" }
+kotlin-compose          = { id = "org.jetbrains.kotlin.plugin.compose",                             version.ref = "kotlin" }
+kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization",                       version.ref = "kotlin" }
+hilt-android            = { id = "com.google.dagger.hilt.android",                                  version.ref = "hilt" }
+ksp                     = { id = "com.google.devtools.ksp",                                         version.ref = "ksp" }
+googleSecrets           = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsPlugin" }
