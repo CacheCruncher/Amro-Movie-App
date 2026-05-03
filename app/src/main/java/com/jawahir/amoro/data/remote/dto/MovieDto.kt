@@ -13,6 +13,6 @@ data class MovieDto(
 )
 
 data class TrendingResponseDto(
-    val results: List<MovieDto>?,
+    @SerializedName("results") val movies: List<MovieDto>?,
     @SerializedName("total_pages") val totalPages: Int?,
 )
