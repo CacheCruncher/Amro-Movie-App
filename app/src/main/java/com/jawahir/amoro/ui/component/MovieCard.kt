@@ -61,7 +61,7 @@ fun MovieCard(
                 onSuccess = { isImageLoading = false },
                 onError = { isImageLoading = false },
                 placeholder = ColorPainter(MaterialTheme.colorScheme.onSurfaceVariant),
-                error = painterResource(R.drawable.ic_broken_image)
+                error = painterResource(R.drawable.img_error_movie_poster)
             )
 
             Spacer(modifier = Modifier.width(Dimens.SpacingMedium))

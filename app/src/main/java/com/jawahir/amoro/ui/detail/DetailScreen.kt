@@ -51,7 +51,6 @@ import com.jawahir.amoro.ui.component.InfoRow
 import com.jawahir.amoro.ui.theme.Dimens
 import com.jawahir.amoro.util.ExternalUrl.IMDB_TITLE
 import com.jawahir.amoro.util.backdropUrl
-import com.jawahir.amoro.util.posterUrl
 import com.jawahir.amoro.util.toFormattedCurrency
 import com.valentinilk.shimmer.shimmer
 
@@ -148,7 +147,7 @@ fun MovieDetailBody(
             onSuccess = { isImageLoading = false },
             onError = { isImageLoading = false },
             placeholder = ColorPainter(MaterialTheme.colorScheme.onSurfaceVariant),
-            error = painterResource(R.drawable.movie_image_placeholder)
+            error = painterResource(R.drawable.img_error_movie_detail)
         )
 
         Column(modifier = Modifier.padding(Dimens.SpacingLarge)) {
