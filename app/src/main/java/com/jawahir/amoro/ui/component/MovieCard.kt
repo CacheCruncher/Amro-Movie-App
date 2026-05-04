@@ -113,7 +113,7 @@ private fun MovieCardPreview() {
     AMOROTheme() {
         MovieCard(
             movie = sampleMovie,
-            onClick = { /* Handle Click */ },
+            onClick = { /* No Op */ },
             modifier = Modifier.padding(Dimens.SpacingMedium)
         )
     }

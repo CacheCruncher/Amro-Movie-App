@@ -8,7 +8,7 @@
     <string name="genre_all">All</string>
     <string name="genre_label">Genre</string>
     <string name="no_movies_found">No movies found</string>
-    <string name="checkmark_prefix">✓  %s</string>
+    <string name="checkmark_prefix">✓</string>
 
     <!-- Sort options -->
     <string name="sort_popularity">Popularity</string>
@@ -20,6 +20,7 @@
     <string name="error_retry">Retry</string>
     <string name="error_server">Server error (%d)</string>
     <string name="error_network">No internet connection</string>
+    <string name="error_unknown">Unknown error</string>
 
     <!-- Detail screen -->
     <string name="detail_status">Status</string>

@@ -50,7 +50,7 @@ class MovieRepositoryImpl @Inject constructor(
                     map
                 }
 
-                is NetworkResult.HttpError, is NetworkResult.NetworkError -> {
+                is NetworkResult.HttpError, is NetworkResult.NetworkError, is NetworkResult.UnknownError -> {
                     emit(response)
                     return@flow
                 }
@@ -77,8 +77,7 @@ class MovieRepositoryImpl @Inject constructor(
                     page++
                 }
 
-                is NetworkResult.HttpError, is NetworkResult.NetworkError -> {
-                    // WHY emit AND break?
+                is NetworkResult.HttpError, is NetworkResult.NetworkError, is NetworkResult.UnknownError -> {
                     // break alone ends flow silently — user sees partial list with no
                     // explanation. Emitting lets ViewModel show a snackbar notification.
                     // WHY NOT retry? Risk of infinite loop if network stays down.
@@ -101,7 +100,7 @@ class MovieRepositoryImpl @Inject constructor(
                 return NetworkResult.Success(movieDetail)
             }
 
-            is NetworkResult.HttpError, is NetworkResult.NetworkError -> return response
+            is NetworkResult.HttpError, is NetworkResult.NetworkError, is NetworkResult.UnknownError -> return response
         }
     }
 }

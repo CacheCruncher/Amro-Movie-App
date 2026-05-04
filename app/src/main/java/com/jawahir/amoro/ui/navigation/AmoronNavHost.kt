@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.jawahir.amoro.ui.trending.TrendingScreen
 import com.jawahir.amoro.ui.detail.DetailScreen
 
@@ -30,7 +31,9 @@ fun AmoronNavHost() {
         }
         composable<Detail> { backStackEntry ->
             val context = LocalContext.current
+            val args = backStackEntry.toRoute<Detail>()
             DetailScreen(
+                movieId = args.movieId,
                 onBackClick = {
                     navController.popBackStack()
                 },

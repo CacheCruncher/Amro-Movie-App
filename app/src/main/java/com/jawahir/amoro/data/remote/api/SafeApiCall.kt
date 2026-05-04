@@ -31,7 +31,7 @@ suspend fun <T> safeApiCall(
         // Map 4xx/5xx errors
         NetworkResult.HttpError(
             code = response.code(),
-            message = response.message().ifBlank { "Unknown server error" },
+            message = response.message()?.takeIf { it.isNotBlank() } ?: "Unknown server error"
         )
     }
 } catch (e: IOException) {
@@ -39,5 +39,5 @@ suspend fun <T> safeApiCall(
     NetworkResult.NetworkError(e)
 } catch (e: Exception) {
     // Serialization errors or unexpected logic crashes
-    NetworkResult.NetworkError(e)
+    NetworkResult.UnknownError(e)
 }

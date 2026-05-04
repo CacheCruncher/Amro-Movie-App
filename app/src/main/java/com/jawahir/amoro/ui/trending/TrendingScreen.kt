@@ -80,18 +80,32 @@ fun TrendingContent(
     val ascending = stringResource(R.string.sort_ascending)
     val descending = stringResource(R.string.sort_descending)
     val allLabel = stringResource(R.string.genre_all)
+    val checkmark = stringResource(R.string.checkmark_prefix)
+
+
+    // Resolve each label — these are stable strings that rarely change
+    val popularityLabel = stringResource(SortOption.POPULARITY.labelRes)
+    val titleLabel = stringResource(SortOption.TITLE.labelRes)
+    val releaseDateLabel = stringResource(SortOption.RELEASE_DATE.labelRes)
+
+    val resolvedSortLabels = mapOf(
+        SortOption.POPULARITY to popularityLabel,
+        SortOption.TITLE to titleLabel,
+        SortOption.RELEASE_DATE to releaseDateLabel,
+    )
+
 
     /**
      * - Avoids rebuilding dropdown list on every recomposition
      * - Recomputes only when key change
      */
-    val sortItems = remember(filterSort, ascending, descending) {
-        buildSortItems(filterSort, ascending, descending, onEvent)
+    val sortItems = remember(filterSort, resolvedSortLabels) {
+        buildSortItems(filterSort, ascending, descending, resolvedSortLabels,checkmark, onEvent)
     }
 
     val genreItems = remember(uiState, filterSort) {
         if (uiState is TrendingUiState.Success) {
-            buildGenreItems(uiState.genres, filterSort, allLabel, onEvent)
+            buildGenreItems(uiState.genres, filterSort, allLabel, checkmark, onEvent)
         } else emptyList()
     }
     Scaffold(
@@ -180,6 +194,8 @@ private fun buildSortItems(
     filterSort: FilterSortState,
     ascending: String,
     descending: String,
+    sortOptionLabels: Map<SortOption, String>,
+    checkmark: String,
     onEvent: (TrendingEvent) -> Unit
 ): List<DropDownItem> {
     return buildList {
@@ -191,14 +207,11 @@ private fun buildSortItems(
         )
 
         SortOption.entries.forEach { option ->
-            val label = option.name // simple, UI already shows localized label elsewhere
-
-            add(
-                DropDownItem(
-                    label = if (filterSort.sortOption == option) "✓  $label" else label,
-                    onSelected = { onEvent(TrendingEvent.SelectSort(option)) }
-                )
-            )
+            val label = sortOptionLabels[option] ?: option.name
+            add(DropDownItem(
+                label = if (filterSort.sortOption == option) "$checkmark $label" else label,
+                onSelected = { onEvent(TrendingEvent.SelectSort(option)) },
+            ))
         }
     }
 }
@@ -207,12 +220,13 @@ private fun buildGenreItems(
     genres: List<Genre>,
     filterSort: FilterSortState,
     allLabel: String,
+    checkmark: String,
     onEvent: (TrendingEvent) -> Unit
 ): List<DropDownItem> {
     return buildList {
         add(
             DropDownItem(
-                label = if (filterSort.selectedGenre == null) "✓  $allLabel" else allLabel,
+                label = if (filterSort.selectedGenre == null) "$checkmark  $allLabel" else allLabel,
                 onSelected = { onEvent(TrendingEvent.SelectGenre(null)) }
             )
         )
@@ -220,8 +234,7 @@ private fun buildGenreItems(
         genres.forEach { genre ->
             add(
                 DropDownItem(
-                    label = if (filterSort.selectedGenre?.id == genre.id)
-                        "✓  ${genre.name}"
+                    label = if (filterSort.selectedGenre?.id == genre.id) "$checkmark  ${genre.name}"
                     else genre.name,
                     onSelected = { onEvent(TrendingEvent.SelectGenre(genre)) }
                 )

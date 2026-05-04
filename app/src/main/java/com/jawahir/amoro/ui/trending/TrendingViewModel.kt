@@ -3,22 +3,28 @@ package com.jawahir.amoro.ui.trending
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jawahir.amoro.R
+import com.jawahir.amoro.di.DefaultDispatcher
 import com.jawahir.amoro.domain.model.Genre
 import com.jawahir.amoro.domain.model.Movie
 import com.jawahir.amoro.domain.result.NetworkResult
 import com.jawahir.amoro.domain.usecase.GetTrendingMovies
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class TrendingViewModel @Inject constructor(
-    val getTrendingMovies: GetTrendingMovies
+    private val getTrendingMovies: GetTrendingMovies,
+    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     // Single source of truth
@@ -33,8 +39,10 @@ class TrendingViewModel @Inject constructor(
     private val _effects = MutableSharedFlow<TrendingEffect>()
     val effects = _effects.asSharedFlow()
 
-    // Internal raw data (not exposed)
     private var allMovies: List<Movie> = emptyList()
+    private var cachedGenre: List<Genre> = emptyList()
+
+    private var filterJob: Job? = null
 
     init {
         handleEvent(TrendingEvent.LoadMovies)
@@ -46,27 +54,18 @@ class TrendingViewModel @Inject constructor(
             TrendingEvent.LoadMovies -> loadMovies()
             is TrendingEvent.SelectGenre -> {
                 _filterSort.update { it.copy(selectedGenre = event.genre) }
-                updateMovies()
+                applyFilterAsync()
             }
 
             is TrendingEvent.SelectSort -> {
                 _filterSort.update { it.copy(sortOption = event.option) }
-                updateMovies()
+                applyFilterAsync()
             }
 
             TrendingEvent.ToggleSortDirection -> {
                 _filterSort.update { it.copy(sortAscending = !it.sortAscending) }
-                updateMovies()
+                applyFilterAsync()
             }
-        }
-    }
-
-    private fun updateMovies() {
-        val current = _uiState.value
-        if (current is TrendingUiState.Success) {
-            _uiState.value = current.copy(
-                movies = _filterSort.value.applyTo(allMovies)
-            )
         }
     }
 
@@ -74,41 +73,31 @@ class TrendingViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = TrendingUiState.Loading
 
-            getTrendingMovies().collect { result ->
+            getTrendingMovies().collectLatest { result ->
                 when (result) {
 
                     is NetworkResult.Success -> {
                         allMovies = result.data
+                        cachedGenre = result.data.toUniqueGenreList()
 
-                        _uiState.value = TrendingUiState.Success(
-                            movies = _filterSort.value.applyTo(result.data),
-                            genres = result.data.toUniqueGenreList(),
-                            isLoadingMore = true // still loading until flow completes
-                        )
+                        applyFilter(isLoading = true)
                     }
 
-                    is NetworkResult.HttpError -> {
-                        val messageRes = R.string.error_server
-                        if (allMovies.isNotEmpty()) {
-                            _effects.emit(TrendingEffect.ShowSnackbar(messageRes, result.code))
-                            updateLoadingState(false)
-                        } else {
-                            _uiState.value = TrendingUiState.Error(messageRes, result.code)
+                    is NetworkResult.HttpError,
+                    is NetworkResult.NetworkError,
+                    is NetworkResult.UnknownError -> {
+
+                        val (messageRes, code) = when (result) {
+                            is NetworkResult.HttpError -> R.string.error_server to result.code
+                            is NetworkResult.NetworkError -> R.string.error_network to null
+                            is NetworkResult.UnknownError -> R.string.error_unknown to null
                         }
 
-                    }
-
-                    is NetworkResult.NetworkError -> {
-                        val messageRes = R.string.error_network
-
                         if (allMovies.isNotEmpty()) {
-                            _effects.emit(TrendingEffect.ShowSnackbar(messageRes))
-                            // Stop loading indicator but keep data
+                            _effects.emit(TrendingEffect.ShowSnackbar(messageRes, code))
                             updateLoadingState(false)
-
                         } else {
-                            // No data → full error
-                            _uiState.value = TrendingUiState.Error(messageRes)
+                            _uiState.value = TrendingUiState.Error(messageRes, code)
                         }
                     }
                 }
@@ -119,6 +108,34 @@ class TrendingViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cancels any in-flight filter job and starts a new one.
+     */
+    private fun applyFilterAsync() {
+        filterJob?.cancel()
+        filterJob = viewModelScope.launch {
+            applyFilter()
+        }
+    }
+
+    /**
+     * **Note on Suspension:**
+     * Being a `suspend` function ensures the caller (e.g., loadMovies) waits for
+     * filtering to finish before triggering further state updates. This prevents
+     * race conditions where completion logic might finish before the filtered
+     * UI state is actually emitted.
+     */
+    private suspend fun applyFilter(isLoading: Boolean = false) {
+        val filtered = withContext(defaultDispatcher) {
+            _filterSort.value.applyTo(allMovies)
+        }
+
+        _uiState.value = TrendingUiState.Success(
+            movies = filtered,
+            genres = cachedGenre,
+            isLoadingMore = isLoading
+        )
+    }
 
     private fun updateLoadingState(isLoading: Boolean) {
         val current = _uiState.value
@@ -127,12 +144,9 @@ class TrendingViewModel @Inject constructor(
         }
     }
 
-
     private fun List<Movie>.toUniqueGenreList(): List<Genre> {
         return flatMap { it.genres }
             .distinctBy { it.id }
             .sortedBy { it.name }
     }
-
-
 }

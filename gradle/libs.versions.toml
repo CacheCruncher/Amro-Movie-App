@@ -39,6 +39,7 @@ foundation            = "1.11.0"
 
 #secrets
 secretsPlugin         = "2.0.1"
+runtime = "1.11.0"
 
 [libraries]
 # AndroidX core
@@ -90,7 +91,8 @@ androidx-espresso-core               = { group = "androidx.test.espresso",     n
 mockk                                = { group = "io.mockk",                   name = "mockk",                        version.ref = "mockk" }
 kotlinx-coroutines-test              = { group = "org.jetbrains.kotlinx",      name = "kotlinx-coroutines-test",      version.ref = "coroutinesTest" }
 turbine                              = { group = "app.cash.turbine",           name = "turbine",                      version.ref = "turbine" }
-androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-compose-foundation          = { group = "androidx.compose.foundation",name = "foundation",                   version.ref = "foundation" }
+androidx-compose-runtime             = { group = "androidx.compose.runtime",   name = "runtime",                      version.ref = "runtime" }
 
 [plugins]
 android-application     = { id = "com.android.application",                                         version.ref = "agp" }
