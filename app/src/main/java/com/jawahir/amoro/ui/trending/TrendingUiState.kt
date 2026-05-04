@@ -1,4 +1,4 @@
-package com.jawahir.amoro.trending
+package com.jawahir.amoro.ui.trending
 
 import androidx.annotation.StringRes
 import com.jawahir.amoro.domain.model.Genre

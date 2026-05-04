@@ -1,4 +1,4 @@
-package com.jawahir.amoro.trending
+package com.jawahir.amoro.ui.trending
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize

@@ -7,7 +7,7 @@ import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.jawahir.amoro.trending.TrendingScreen
+import com.jawahir.amoro.ui.trending.TrendingScreen
 import com.jawahir.amoro.ui.detail.DetailScreen
 
 /**
