@@ -14,6 +14,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -45,20 +49,22 @@ fun MovieCard(
         Row(
             modifier = Modifier.padding(Dimens.SpacingMedium)
         ) {
+            var isImageLoading by remember { mutableStateOf(true) }
+
             AsyncImage(
                 model = movie.posterUrl(),
                 contentDescription = movie.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(
-                        width = Dimens.PosterWidth,
-                        height = Dimens.PosterHeight
-                    )
+                    .size(width = Dimens.PosterWidth, height = Dimens.PosterHeight)
                     .clip(RoundedCornerShape(Dimens.PosterRadius))
-                    .shimmer(),
-                placeholder = ColorPainter(Color.LightGray),
+                    .then(if (isImageLoading) Modifier.shimmer() else Modifier),
+                onSuccess = { isImageLoading = false },
+                onError = { isImageLoading = false },
+                placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
                 error = painterResource(R.drawable.ic_broken_image)
             )
+
             Spacer(modifier = Modifier.width(Dimens.SpacingMedium))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -85,7 +91,7 @@ fun MovieCard(
                 Text(
                     text = "★ ${"%.1f".format(movie.voteAverage)}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }

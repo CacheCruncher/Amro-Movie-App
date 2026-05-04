@@ -9,6 +9,7 @@ import com.jawahir.amoro.domain.repository.MovieRepository
 import com.jawahir.amoro.domain.result.NetworkResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
 import javax.inject.Singleton
 
 
@@ -20,7 +21,7 @@ import javax.inject.Singleton
  * This prevents redundant network calls for static genre data across different screens.
  */
 @Singleton
-class MovieRepositoryImpl(
+class MovieRepositoryImpl @Inject constructor(
     private val apiService: TmdbApiService
 ) : MovieRepository {
 
