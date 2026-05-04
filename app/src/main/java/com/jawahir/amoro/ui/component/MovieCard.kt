@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -61,7 +60,7 @@ fun MovieCard(
                     .then(if (isImageLoading) Modifier.shimmer() else Modifier),
                 onSuccess = { isImageLoading = false },
                 onError = { isImageLoading = false },
-                placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
+                placeholder = ColorPainter(MaterialTheme.colorScheme.onSurfaceVariant),
                 error = painterResource(R.drawable.ic_broken_image)
             )
 
