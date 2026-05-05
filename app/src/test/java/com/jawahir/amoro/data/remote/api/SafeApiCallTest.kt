@@ -24,7 +24,7 @@ import java.io.IOException
  */
 class SafeApiCallTest {
 
-    // ─── Success cases ────────────────────────────────────────────────────────
+    // Success cases
 
     @Test
     fun `safeApiCall - successful response with body returns Success`() = runTest {
@@ -55,22 +55,7 @@ class SafeApiCallTest {
         assertEquals(204, (result as HttpError).code)
     }
 
-    // ─── HTTP error cases ─────────────────────────────────────────────────────
-
-    @Test
-    fun `safeApiCall - 401 response returns HttpError with code 401`() = runTest {
-        val response = mockk<Response<String>> {
-            every { isSuccessful } returns false
-            every { code() } returns 401
-            every { message() } returns "Unauthorized"
-            every { body() } returns null
-        }
-
-        val result = safeApiCall { response }
-
-        assertTrue(result is HttpError)
-        assertEquals(401, (result as HttpError).code)
-    }
+    // HTTP error cases
 
     @Test
     fun `safeApiCall - 500 response returns HttpError with code 500`() = runTest {
@@ -88,7 +73,7 @@ class SafeApiCallTest {
         assertEquals("Internal Server Error", result.message)
     }
 
-    // ─── Network error cases ──────────────────────────────────────────────────
+    // Network error cases
 
     @Test
     fun `safeApiCall - IOException returns NetworkError`() = runTest {

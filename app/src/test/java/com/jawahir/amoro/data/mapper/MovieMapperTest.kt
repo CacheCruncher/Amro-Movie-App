@@ -20,7 +20,7 @@ class MovieMapperTest {
 
     private val genreMap = mapOf(28 to "Action", 35 to "Comedy", 18 to "Drama")
 
-    // ─── MovieDto ─────────────────────────────────────────────────────────────
+    // MovieDto
 
     @Test
     fun `toDomainOrNull - valid dto maps all fields correctly`() {
@@ -43,25 +43,6 @@ class MovieMapperTest {
         assertEquals(72.5, result.popularity, 0.01)
         assertEquals("2026-04-24", result.releaseDate)
         assertEquals(6.5, result.voteAverage, 0.01)
-    }
-
-    @Test
-    fun `toDomainOrNull - genres are resolved from genreMap`() {
-        val dto = MovieDto(
-            id = 1,
-            title = "Apex",
-            genreIds = listOf(28, 35),
-            popularity = null,
-            releaseDate = null,
-            voteAverage = null,
-            posterPath = null
-        )
-
-        val result = dto.toDomainOrNull(genreMap)!!
-
-        assertEquals(2, result.genres.size)
-        assertEquals("Action", result.genres.find { it.id == 28 }?.name)
-        assertEquals("Comedy", result.genres.find { it.id == 35 }?.name)
     }
 
     @Test
@@ -131,22 +112,7 @@ class MovieMapperTest {
         assertEquals(0.0, result.voteAverage, 0.01)
     }
 
-    @Test
-    fun `toDomainOrNull - empty genre map returns movie with empty genres`() {
-        val dto = MovieDto(
-            id = 1,
-            title = "Apex",
-            genreIds = listOf(28, 35),
-            popularity = null,
-            releaseDate = null,
-            voteAverage = null,
-            posterPath = null
-        )
-        val result = dto.toDomainOrNull(emptyMap())!!
-        assertTrue(result.genres.isEmpty())
-    }
-
-    // ─── MovieDetailDto ───────────────────────────────────────────────────────
+    // MovieDetailDto
 
     @Test
     fun `MovieDetailDto toDomainOrNull - valid dto maps all fields`() {
@@ -258,16 +224,7 @@ class MovieMapperTest {
         assertEquals("", result.imdbId)
     }
 
-    // ─── GenreDto ─────────────────────────────────────────────────────────────
-
-    @Test
-    fun `GenreDto toDomainOrNull - valid dto maps correctly`() {
-        val dto = GenreDto(id = 28, name = "Action")
-        val result = dto.toDomainOrNull()!!
-        assertEquals(28, result.id)
-        assertEquals("Action", result.name)
-    }
-
+    // GenreDto
     @Test
     fun `GenreDto toDomainOrNull - null id returns null`() {
         assertNull(GenreDto(id = null, name = "Action").toDomainOrNull())

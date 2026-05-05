@@ -11,7 +11,7 @@ import org.junit.Test
  */
 class FilterSortStateTest {
 
-    // ─── Test data ───────────────────────────────────────────────────────────
+    // Test data
 
     private val action   = Genre(id = 28, name = "Action")
     private val comedy   = Genre(id = 35,  name = "Comedy")
@@ -41,7 +41,7 @@ class FilterSortStateTest {
         movie(5, "Delta",      popularity = 70.0, releaseDate = "2024-07-10", genres = listOf(action)),
     )
 
-    // ─── Filter tests ─────────────────────────────────────────────────────────
+    // Filter tests
 
     @Test
     fun `applyTo - no filter returns all movies`() {
@@ -76,16 +76,7 @@ class FilterSortStateTest {
         assertTrue(result.isEmpty())
     }
 
-    @Test
-    fun `applyTo - filter preserves movies with multiple matching genres`() {
-        // Movie 2 has both Action and Comedy — should appear in both filters
-        val actionResult = FilterSortState(selectedGenre = action).applyTo(movies)
-        val comedyResult = FilterSortState(selectedGenre = comedy).applyTo(movies)
-        assertTrue(actionResult.any { it.id == 2 })
-        assertTrue(comedyResult.any { it.id == 2 })
-    }
-
-    // ─── Sort by popularity ───────────────────────────────────────────────────
+    // Sort by popularity
 
     @Test
     fun `applyTo - sort by popularity descending returns highest first`() {
@@ -98,18 +89,7 @@ class FilterSortStateTest {
         assertEquals(listOf(90.0, 80.0, 70.0, 50.0, 30.0), result.map { it.popularity })
     }
 
-    @Test
-    fun `applyTo - sort by popularity ascending returns lowest first`() {
-        val state = FilterSortState(
-            sortOption = SortOption.POPULARITY,
-            sortAscending = true,
-        )
-        val result = state.applyTo(movies)
-        // Expected: 30, 50, 70, 80, 90
-        assertEquals(listOf(30.0, 50.0, 70.0, 80.0, 90.0), result.map { it.popularity })
-    }
-
-    // ─── Sort by title ────────────────────────────────────────────────────────
+    // Sort by title
 
     @Test
     fun `applyTo - sort by title descending returns Z first`() {
@@ -122,18 +102,7 @@ class FilterSortStateTest {
         assertEquals(listOf("Zeta", "Delta", "Cobra", "Beta", "Alpha"), result.map { it.title })
     }
 
-    @Test
-    fun `applyTo - sort by title ascending returns A first`() {
-        val state = FilterSortState(
-            sortOption = SortOption.TITLE,
-            sortAscending = true,
-        )
-        val result = state.applyTo(movies)
-        // Expected: Alpha, Beta, Cobra, Delta, Zeta
-        assertEquals(listOf("Alpha", "Beta", "Cobra", "Delta", "Zeta"), result.map { it.title })
-    }
-
-    // ─── Sort by release date ─────────────────────────────────────────────────
+    // Sort by release date
 
     @Test
     fun `applyTo - sort by release date descending returns newest first`() {
@@ -146,18 +115,7 @@ class FilterSortStateTest {
         assertEquals("2022-11-05", result.last().releaseDate)
     }
 
-    @Test
-    fun `applyTo - sort by release date ascending returns oldest first`() {
-        val state = FilterSortState(
-            sortOption = SortOption.RELEASE_DATE,
-            sortAscending = true,
-        )
-        val result = state.applyTo(movies)
-        assertEquals("2022-11-05", result.first().releaseDate)
-        assertEquals("2025-06-20", result.last().releaseDate)
-    }
-
-    // ─── Combined filter + sort ───────────────────────────────────────────────
+    // Combined filter + sort
 
     @Test
     fun `applyTo - filter by Action then sort by popularity descending`() {

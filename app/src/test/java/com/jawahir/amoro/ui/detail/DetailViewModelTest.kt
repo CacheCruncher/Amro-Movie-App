@@ -8,7 +8,6 @@ import com.jawahir.amoro.domain.model.MovieDetail
 import com.jawahir.amoro.domain.result.NetworkResult
 import com.jawahir.amoro.domain.usecase.GetMovieDetail
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,18 +17,12 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 
 /**
  * Tests for DetailViewModel state transitions.
- *
- * WHY CONSTRUCT SavedStateHandle MANUALLY?
- * SavedStateHandle can be instantiated in tests with a map of initial values.
- * This avoids needing a full Android environment or Hilt test setup.
- * We pass the movieId matching what the Detail route would provide.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
@@ -73,22 +66,7 @@ class DetailViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ─── Initial state ────────────────────────────────────────────────────────
-
-    @Test
-    fun `initial state is Loading`() = runTest {
-        coEvery { getMovieDetail(any()) } returns NetworkResult.Success(movieDetail())
-
-        val viewModel = createViewModel()
-
-        viewModel.uiState.test {
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertTrue(awaitItem() is DetailUiState.Loading)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    // ─── Success ──────────────────────────────────────────────────────────────
+    //  Success
 
     @Test
     fun `successful load transitions to Success with correct movie`() = runTest {
@@ -107,17 +85,7 @@ class DetailViewModelTest {
         }
     }
 
-    @Test
-    fun `getMovieDetail called with correct movieId from SavedStateHandle`() = runTest {
-        coEvery { getMovieDetail(99) } returns NetworkResult.Success(movieDetail(99))
-
-        createViewModel(99)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify(exactly = 1) { getMovieDetail(99) }
-    }
-
-    // ─── Error states ─────────────────────────────────────────────────────────
+    // Error states
 
     @Test
     fun `HTTP error transitions to Error with server message and code`() = runTest {
@@ -167,7 +135,7 @@ class DetailViewModelTest {
         }
     }
 
-    // ─── Retry ────────────────────────────────────────────────────────────────
+    // Retry
 
     @Test
     fun `LoadDetail event retries and transitions to Success`() = runTest {

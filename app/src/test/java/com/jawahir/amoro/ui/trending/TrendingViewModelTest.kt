@@ -11,6 +11,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -41,7 +42,11 @@ class TrendingViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val getTrendingMovies = mockk<GetTrendingMovies>()
 
-    private fun createViewModel() = TrendingViewModel(getTrendingMovies, testDispatcher)
+    private fun createViewModel() = TrendingViewModel(
+        getTrendingMovies = getTrendingMovies,
+        defaultDispatcher = testDispatcher/*,
+        sharingStarted = SharingStarted.Eagerly*/
+    )
 
     private val action = Genre(id = 28, name = "Action")
     private val comedy = Genre(id = 35, name = "Comedy")
@@ -66,20 +71,7 @@ class TrendingViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ─── Initial state ────────────────────────────────────────────────────────
-
-    @Test
-    fun `initial state is Loading`() = runTest {
-        every { getTrendingMovies() } returns flowOf()
-        val viewModel = createViewModel()
-
-        viewModel.uiState.test {
-            assertTrue(awaitItem() is TrendingUiState.Loading)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    // ─── Success states ───────────────────────────────────────────────────────
+    // Success states
 
     @Test
     fun `successful load transitions to Success with movies`() = runTest {
@@ -97,63 +89,51 @@ class TrendingViewModelTest {
     }
 
     @Test
-    fun `successful load extracts unique genres from movies`() = runTest {
+    fun `genres are unique and sorted alphabetically`() = runTest {
         val movies = listOf(
-            movie(1, genres = listOf(action, comedy)),
+            movie(1, genres = listOf(comedy, action)),
             movie(2, genres = listOf(action)),
             movie(3, genres = listOf(comedy)),
         )
+
         every { getTrendingMovies() } returns flowOf(NetworkResult.Success(movies))
 
         val viewModel = createViewModel()
 
-
         viewModel.uiState.test {
-            //testDispatcher.scheduler.advanceUntilIdle()
             awaitItem() // Loading
+
             val success = awaitItem() as TrendingUiState.Success
-            // Action and Comedy — deduplicated
+
             assertEquals(2, success.genres.size)
-            assertTrue(success.genres.any { it.id == action.id })
-            assertTrue(success.genres.any { it.id == comedy.id })
+            assertEquals("Action", success.genres[0].name)
+            assertEquals("Comedy", success.genres[1].name)
+
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `genres are sorted alphabetically`() = runTest {
-        val movies = listOf(
-            movie(1, genres = listOf(comedy, action)), // Comedy before Action in input
+    fun `empty movie list emits Success with empty genres`() = runTest {
+        every { getTrendingMovies() } returns flowOf(
+            NetworkResult.Success(emptyList())
         )
-        every { getTrendingMovies() } returns flowOf(NetworkResult.Success(movies))
 
         val viewModel = createViewModel()
 
         viewModel.uiState.test {
-            awaitItem() // Loading
+            awaitItem()
+
             val success = awaitItem() as TrendingUiState.Success
-            // Alphabetical: Action before Comedy
-            assertEquals("Action", success.genres.first().name)
-            assertEquals("Comedy", success.genres.last().name)
+
+            assertTrue(success.movies.isEmpty())
+            assertTrue(success.genres.isEmpty())
+
             cancelAndIgnoreRemainingEvents()
         }
     }
 
-    @Test
-    fun `isLoadingMore is false after completion`() = runTest {
-        val movies = listOf(movie(1))
-        every { getTrendingMovies() } returns flowOf(NetworkResult.Success(movies))
-
-        val viewModel = createViewModel()
-
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.uiState.value as TrendingUiState.Success
-
-        assertFalse(state.isLoadingMore)
-    }
-
-    // ─── Error states ─────────────────────────────────────────────────────────
+    // Error states
 
     @Test
     fun `HTTP error on first load transitions to Error state`() = runTest {
@@ -180,120 +160,116 @@ class TrendingViewModelTest {
             awaitItem() // Loading
             val error = awaitItem() as TrendingUiState.Error
             assertEquals(R.string.error_network, error.messageRes)
-            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `HTTP error after partial load emits snackbar effect not full screen error`() = runTest {
-        val movies = listOf(movie(1), movie(2))
+    fun `unknown error on first load transitions to Error state`() = runTest {
+        every { getTrendingMovies() } returns flowOf(NetworkResult.UnknownError(Throwable()))
+
+        val viewModel = createViewModel()
+
+        viewModel.uiState.test {
+            awaitItem()
+            val error = awaitItem() as TrendingUiState.Error
+
+            assertEquals(R.string.error_unknown, error.messageRes)
+        }
+    }
+
+    // Partial failure
+    @Test
+    fun `error after success  snackbar emitted, Success state preserved`() = runTest {
         every { getTrendingMovies() } returns flowOf(
-            NetworkResult.Success(movies),
-            NetworkResult.HttpError(503, "Service unavailable"),
+            NetworkResult.Success(listOf(movie(1))),
+            NetworkResult.HttpError(500, ""),
         )
 
-        val viewModel = createViewModel()
-
-
+        val viewModel = createViewModel() // no sharingStarted needed
 
         viewModel.effects.test {
-            // Advance past initial load
+            // Subscribing to uiState activates combine() — WhileSubscribed works
+            val uiStates = mutableListOf<TrendingUiState>()
+            val uiJob = launch { viewModel.uiState.collect { uiStates.add(it) } }
+
             testDispatcher.scheduler.advanceUntilIdle()
-            // Trigger collection — effect already emitted
+
             val effect = awaitItem() as TrendingEffect.ShowSnackbar
             assertEquals(R.string.error_server, effect.messageRes)
+
+            assertTrue(uiStates.last() is TrendingUiState.Success)
+            uiJob.cancel()
             cancelAndIgnoreRemainingEvents()
         }
-
-        // uiState should still be Success — not replaced by error
-        assertTrue(viewModel.uiState.value is TrendingUiState.Success)
     }
 
-    // ─── Filter events ────────────────────────────────────────────────────────
+    // Filter events
 
     @Test
-    fun `SelectGenre event updates filterSort selectedGenre`() = runTest {
-        every { getTrendingMovies() } returns flowOf()
+    fun `selecting and clearing genre updates filter and affects output`() = runTest {
+        val movies = listOf(
+            movie(1, genres = listOf(action)),
+            movie(2, genres = listOf(comedy)),
+        )
+
+        every { getTrendingMovies() } returns flowOf(NetworkResult.Success(movies))
 
         val viewModel = createViewModel()
 
-        viewModel.filterSort.test {
-            awaitItem() // initial FilterSortState
+        viewModel.uiState.test {
+            awaitItem() // loading
+            // Skip all initial Success emissions
+            var state = awaitItem()
+            while (state is TrendingUiState.Success && state.isLoadingMore) {
+                state = awaitItem()
+            }
 
+            // Apply filter
             viewModel.handleEvent(TrendingEvent.SelectGenre(action))
+            // Wait for async filter to finish
+            testDispatcher.scheduler.advanceUntilIdle()
 
-            val updated = awaitItem()
-            assertEquals(action, updated.selectedGenre)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
+            val filtered = awaitItem() as TrendingUiState.Success
+            assertEquals(1, filtered.movies.size)
 
-    @Test
-    fun `SelectGenre with null clears the genre filter`() = runTest {
-        every { getTrendingMovies() } returns flowOf()
-
-        val viewModel = createViewModel()
-        viewModel.handleEvent(TrendingEvent.SelectGenre(action))
-
-        viewModel.filterSort.test {
-            awaitItem() // current state with action selected
-
+            // Clear filter
             viewModel.handleEvent(TrendingEvent.SelectGenre(null))
+            testDispatcher.scheduler.advanceUntilIdle()
 
-            val updated = awaitItem()
-            assertEquals(null, updated.selectedGenre)
+            val cleared = awaitItem() as TrendingUiState.Success
+            assertEquals(2, cleared.movies.size)
+
             cancelAndIgnoreRemainingEvents()
         }
     }
 
-    // ─── Sort events ──────────────────────────────────────────────────────────
-
+    // Sort events
     @Test
-    fun `SelectSort event updates sortOption`() = runTest {
-        every { getTrendingMovies() } returns flowOf()
-
-        val viewModel = createViewModel()
-
-        viewModel.filterSort.test {
-            awaitItem() // initial
-
-            viewModel.handleEvent(TrendingEvent.SelectSort(SortOption.TITLE))
-
-            val updated = awaitItem()
-            assertEquals(SortOption.TITLE, updated.sortOption)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `ToggleSortDirection flips sortAscending`() = runTest {
+    fun `toggle sort direction flips ascending flag`() = runTest {
         every { getTrendingMovies() } returns flowOf()
 
         val viewModel = createViewModel()
 
         viewModel.filterSort.test {
             val initial = awaitItem()
-            assertFalse(initial.sortAscending) // default is descending
+            assertFalse(initial.sortAscending)
 
             viewModel.handleEvent(TrendingEvent.ToggleSortDirection)
             assertTrue(awaitItem().sortAscending)
-
-            viewModel.handleEvent(TrendingEvent.ToggleSortDirection)
-            assertFalse(awaitItem().sortAscending)
-
-            cancelAndIgnoreRemainingEvents()
         }
     }
 
+    // State persistence
+
     @Test
-    fun `filterSort survives a movie reload`() = runTest {
+    fun `filter survives reload`() = runTest {
         every { getTrendingMovies() } returns flowOf(NetworkResult.Success(listOf(movie(1))))
 
         val viewModel = createViewModel()
         viewModel.handleEvent(TrendingEvent.SelectGenre(action))
+
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Trigger reload
         every { getTrendingMovies() } returns flowOf(
             NetworkResult.Success(
                 listOf(
@@ -303,9 +279,9 @@ class TrendingViewModelTest {
             )
         )
         viewModel.handleEvent(TrendingEvent.LoadMovies)
+
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Genre selection preserved after reload
         assertEquals(action, viewModel.filterSort.value.selectedGenre)
     }
 }

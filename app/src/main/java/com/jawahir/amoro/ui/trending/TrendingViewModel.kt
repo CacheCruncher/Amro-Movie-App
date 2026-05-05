@@ -13,12 +13,18 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,120 +33,94 @@ class TrendingViewModel @Inject constructor(
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    // Single source of truth
-    private val _uiState = MutableStateFlow<TrendingUiState>(TrendingUiState.Loading)
-    val uiState = _uiState.asStateFlow()
-
-    // User preferences (independent state)
+    private val _loadState = MutableStateFlow<LoadState>(LoadState.Loading)
     private val _filterSort = MutableStateFlow(FilterSortState())
     val filterSort = _filterSort.asStateFlow()
-
-    // One-off effects
     private val _effects = MutableSharedFlow<TrendingEffect>()
     val effects = _effects.asSharedFlow()
 
-    private var allMovies: List<Movie> = emptyList()
-    private var cachedGenre: List<Genre> = emptyList()
+    private var loadJob: Job? = null
 
-    private var filterJob: Job? = null
+
+    val uiState: StateFlow<TrendingUiState> = combine(
+        _loadState,
+        _filterSort,
+    ) { loadState, filterSort ->
+        when (loadState) {
+            is LoadState.Loading -> TrendingUiState.Loading
+            is LoadState.Error -> TrendingUiState.Error(loadState.messageRes, loadState.arg)
+            is LoadState.Success -> TrendingUiState.Success(
+                movies = filterSort.applyTo(loadState.movies),
+                genres = loadState.genres,
+                isLoadingMore = loadState.isLoadingMore,
+            )
+        }
+    }.flowOn(defaultDispatcher).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TrendingUiState.Loading,
+    )
 
     init {
         handleEvent(TrendingEvent.LoadMovies)
     }
 
-
     fun handleEvent(event: TrendingEvent) {
         when (event) {
             TrendingEvent.LoadMovies -> loadMovies()
-            is TrendingEvent.SelectGenre -> {
-                _filterSort.update { it.copy(selectedGenre = event.genre) }
-                applyFilterAsync()
-            }
-
-            is TrendingEvent.SelectSort -> {
-                _filterSort.update { it.copy(sortOption = event.option) }
-                applyFilterAsync()
-            }
-
-            TrendingEvent.ToggleSortDirection -> {
-                _filterSort.update { it.copy(sortAscending = !it.sortAscending) }
-                applyFilterAsync()
-            }
+            is TrendingEvent.SelectGenre -> _filterSort.update { it.copy(selectedGenre = event.genre) }
+            is TrendingEvent.SelectSort -> _filterSort.update { it.copy(sortOption = event.option) }
+            TrendingEvent.ToggleSortDirection -> _filterSort.update { it.copy(sortAscending = !it.sortAscending) }
         }
     }
 
     private fun loadMovies() {
-        viewModelScope.launch {
-            _uiState.value = TrendingUiState.Loading
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
 
-            getTrendingMovies().collectLatest { result ->
-                when (result) {
-
-                    is NetworkResult.Success -> {
-                        allMovies = result.data
-                        cachedGenre = result.data.toUniqueGenreList()
-
-                        applyFilter(isLoading = true)
+            getTrendingMovies()
+                .onStart {
+                    _loadState.value = LoadState.Loading
+                }
+                .onCompletion {
+                    _loadState.update { state ->
+                        if (state is LoadState.Success) state.copy(isLoadingMore = false)
+                        else state
                     }
+                }
+                .collectLatest { result ->
+                    when (result) {
 
-                    is NetworkResult.HttpError,
-                    is NetworkResult.NetworkError,
-                    is NetworkResult.UnknownError -> {
-
-                        val (messageRes, code) = when (result) {
-                            is NetworkResult.HttpError -> R.string.error_server to result.code
-                            is NetworkResult.NetworkError -> R.string.error_network to null
-                            is NetworkResult.UnknownError -> R.string.error_unknown to null
+                        is NetworkResult.Success -> {
+                            _loadState.value = LoadState.Success(
+                                movies = result.data,
+                                genres = result.data.toUniqueGenreList(),
+                                isLoadingMore = true
+                            )
                         }
 
-                        if (allMovies.isNotEmpty()) {
-                            _effects.emit(TrendingEffect.ShowSnackbar(messageRes, code))
-                            updateLoadingState(false)
-                        } else {
-                            _uiState.value = TrendingUiState.Error(messageRes, code)
+                        is NetworkResult.HttpError,
+                        is NetworkResult.NetworkError,
+                        is NetworkResult.UnknownError -> {
+
+                            val (messageRes, code) = when (result) {
+                                is NetworkResult.HttpError -> R.string.error_server to result.code
+                                is NetworkResult.NetworkError -> R.string.error_network to null
+                                is NetworkResult.UnknownError -> R.string.error_unknown to null
+                            }
+
+                            val current = _loadState.value
+                            if (current is LoadState.Success && current.movies.isNotEmpty()) {
+                                _effects.emit(TrendingEffect.ShowSnackbar(messageRes, code))
+                                _loadState.update { state ->
+                                    if (state is LoadState.Success) state.copy(isLoadingMore = false) else state
+                                }
+                            } else {
+                                _loadState.value = LoadState.Error(messageRes, code)
+                            }
                         }
                     }
                 }
-            }
-
-            // Flow completed → no more loading
-            updateLoadingState(false)
-        }
-    }
-
-    /**
-     * Cancels any in-flight filter job and starts a new one.
-     */
-    private fun applyFilterAsync() {
-        filterJob?.cancel()
-        filterJob = viewModelScope.launch {
-            applyFilter()
-        }
-    }
-
-    /**
-     * **Note on Suspension:**
-     * Being a `suspend` function ensures the caller (e.g., loadMovies) waits for
-     * filtering to finish before triggering further state updates. This prevents
-     * race conditions where completion logic might finish before the filtered
-     * UI state is actually emitted.
-     */
-    private suspend fun applyFilter(isLoading: Boolean = false) {
-        val filtered = withContext(defaultDispatcher) {
-            _filterSort.value.applyTo(allMovies)
-        }
-
-        _uiState.value = TrendingUiState.Success(
-            movies = filtered,
-            genres = cachedGenre,
-            isLoadingMore = isLoading
-        )
-    }
-
-    private fun updateLoadingState(isLoading: Boolean) {
-        val current = _uiState.value
-        if (current is TrendingUiState.Success) {
-            _uiState.value = current.copy(isLoadingMore = isLoading)
         }
     }
 
@@ -149,4 +129,35 @@ class TrendingViewModel @Inject constructor(
             .distinctBy { it.id }
             .sortedBy { it.name }
     }
+}
+
+/**
+ *
+ * NetworkResult tells us what happened on the network:
+ *   Success(data) | HttpError(code) | NetworkError(throwable)
+ *
+ * But combine() needs to know 3 things to build TrendingUiState:
+ *   1. The raw movie list (to re-filter when genre changes)
+ *   2. The genre list
+ *   3. Whether more pages are loading
+ *
+ * NetworkResult.Success only carries List<Movie> — no genres, no isLoadingMore.
+ * We cannot add those to NetworkResult — it lives in the domain layer and
+ * knows nothing about UI concerns like loading spinners or genre chips.
+ *
+ * LoadState bridges the gap: it holds everything combine() needs,
+ * translated from the network result. Private to this file — never exposed.
+ */
+private sealed interface LoadState {
+    data object Loading : LoadState
+    data class Success(
+        val movies: List<Movie>,
+        val genres: List<Genre>,
+        val isLoadingMore: Boolean,
+    ) : LoadState
+
+    data class Error(
+        val messageRes: Int,
+        val arg: Int? = null,
+    ) : LoadState
 }
