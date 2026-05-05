@@ -1,0 +1,8 @@
+{
+  "genres": [
+    { "id": 28,  "name": "Action"   },
+    { "id": 35,  "name": "Comedy"   },
+    { "id": 18,  "name": "Drama"    },
+    { "id": 878, "name": "Science Fiction" }
+  ]
+}

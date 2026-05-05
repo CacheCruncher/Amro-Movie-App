@@ -93,7 +93,6 @@ TMDB's trending endpoint returns 20 movies per page. Three problems to solve:
 ## Known Gaps & What's Next
 
 **Needs doing before release:**
-- `MovieRepositoryImpl` integration tests with MockWebServer
 - ProGuard rules for Gson - without them, field names obfuscate in release builds and JSON parsing silently breaks.
 
 **Good next improvements:**
