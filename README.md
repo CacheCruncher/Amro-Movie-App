@@ -2,6 +2,7 @@
 
 Discover this week's top 100 trending movies. Filter by genre, sort by popularity, title or release date, and tap any movie for full details including budget, runtime, and an IMDB link.
 
+![App Demo](screenshots/Move-list-detail.gif)
 ---
 
 ## How It Works
@@ -67,9 +68,8 @@ TMDB's trending endpoint returns 20 movies per page. Three problems to solve:
 |---|---|
 | `Flow<NetworkResult<List<Movie>>>` return type | Progressive loading - emit after each page |
 | `FilterSortState` separate from `TrendingUiState` | Filter/sort survives Loading/Error state changes |
-| `applyFilter()` as `suspend` | Eliminates race condition - `onCompletion` runs only after the last filter computation completes |
 | `@StringRes` IDs in error state | ViewModel stays context-free. Screen resolves strings with `stringResource()` |
-| `Response<T>` wrapper in API service | Future access to `errorBody()` and headers for 401/rate-limit handling |
+| `Response<T>` wrapper in API service | Future access to `errorBody()` and headers |
 | Type-safe navigation (`@Serializable`) | Route string typos cause runtime crashes. Serializable routes fail at compile time |
 
 ---
@@ -98,6 +98,7 @@ TMDB's trending endpoint returns 20 movies per page. Three problems to solve:
 **Good next improvements:**
 - Run genre fetch and page 1 in parallel with `async/await` - cuts time-to-first-content from ~2s to ~1.5s
 - Pull-to-refresh
+- Modularization: Transition from a single-module to a Feature-based Multi-module architecture (:feature:trending, :feature:detail, :core:network, :domain). This enforces strict layer boundaries and scales for team-based development.
 
 **Future features (architecture is ready):**
 - **Offline:** swap `MovieRepositoryImpl` for a Room-backed version - nothing above the interface changes
