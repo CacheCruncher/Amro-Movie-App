@@ -2,7 +2,9 @@
 
 Discover this week's top 100 trending movies. Filter by genre, sort by popularity, title or release date, and tap any movie for full details including budget, runtime, and an IMDB link.
 
-![App Demo](screenshots/Move-list-detail.gif)
+<p align="center">
+  <img src="screenshots/Move-list-detail.gif" width="300" title="App Demo" alt="App Demo">
+</p>
 ---
 
 ## How It Works
