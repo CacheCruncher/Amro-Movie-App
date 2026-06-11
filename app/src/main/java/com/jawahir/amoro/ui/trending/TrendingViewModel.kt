@@ -82,12 +82,12 @@ class TrendingViewModel @Inject constructor(
                 .onStart {
                     _loadState.value = LoadState.Loading
                 }
-                .onCompletion {
+                /*.onCompletion {
                     _loadState.update { state ->
                         if (state is LoadState.Success) state.copy(isLoadingMore = false)
                         else state
                     }
-                }
+                }*/
                 .collectLatest { result ->
                     when (result) {
 
@@ -95,7 +95,7 @@ class TrendingViewModel @Inject constructor(
                             _loadState.value = LoadState.Success(
                                 movies = result.data,
                                 genres = result.data.toUniqueGenreList(),
-                                isLoadingMore = true
+                                isLoadingMore = result.isLoadingMore
                             )
                         }
 
