@@ -82,12 +82,6 @@ class TrendingViewModel @Inject constructor(
                 .onStart {
                     _loadState.value = LoadState.Loading
                 }
-                /*.onCompletion {
-                    _loadState.update { state ->
-                        if (state is LoadState.Success) state.copy(isLoadingMore = false)
-                        else state
-                    }
-                }*/
                 .collectLatest { result ->
                     when (result) {
 

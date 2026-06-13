@@ -8,22 +8,30 @@ import kotlinx.coroutines.launch
 
 inline fun <T> networkBoundResource(
     crossinline fetchFromDb: () -> Flow<T>,
-    crossinline shouldFetch: suspend (T) -> Boolean,
+    crossinline isEmpty: (T) -> Boolean,
+    crossinline shouldFetch: suspend () -> Boolean,
     crossinline fetchFromRemote: suspend () -> Unit,
     crossinline onFetchFailed: (Throwable) -> Unit = {}
 ): Flow<NetworkResult<T>> = channelFlow {
 
-    // Step1: emit from DB immediately
+    // Step1: fetch from DB
     val dbData = fetchFromDb().first()
+    val fetchNeeded = shouldFetch()
 
-    if (dbData != null) {
-        send(NetworkResult.Success(dbData, false))
+    // Emit from DB only if there is actual data
+    val hasData = !isEmpty(dbData)
+
+    if (hasData) {
+        send(NetworkResult.Success(dbData, fetchNeeded))
     }
 
-    if (shouldFetch(dbData)) {
-        val dbJob = launch{
+    if (fetchNeeded) {
+        // live updates while fetching (progressive — useful for paginated lists)
+        val dbJob = launch {
             fetchFromDb().collect {
-                send(NetworkResult.Success(it, isLoadingMore = true))
+                if (!isEmpty(it)) {
+                    send(NetworkResult.Success(it, isLoadingMore = true))
+                }
             }
         }
 
@@ -37,10 +45,8 @@ inline fun <T> networkBoundResource(
 
         // fetch form remote done , cancel live collector
         dbJob.cancel()
-    }
 
-    // Step3: collect DB forever — emits on every DB write from fetch()
-    fetchFromDb().collect {
-        send(NetworkResult.Success(it, false))
+        val finalDbData = fetchFromDb().first()
+        send(NetworkResult.Success(finalDbData, isLoadingMore = false))
     }
 }

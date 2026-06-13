@@ -22,7 +22,7 @@ interface MovieDao {
     suspend fun insertMovies(movies: List<MovieEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovieGenreCrossRefs(crossRefs: List<MovieGenreCrossRef>)
+    suspend fun insertMovieGenreMap(crossRefs: List<MovieGenreCrossRef>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveFetchTime(meta: MovieFetchMeta)
@@ -34,7 +34,7 @@ interface MovieDao {
     @Transaction
     suspend fun insertMoviesWithGenres(movies: List<MovieEntity>, crossRefs: List<MovieGenreCrossRef>) {
         insertMovies(movies)
-        insertMovieGenreCrossRefs(crossRefs)
+        insertMovieGenreMap(crossRefs)
     }
 
     // Returns Flow so UI observes live updates from DB
