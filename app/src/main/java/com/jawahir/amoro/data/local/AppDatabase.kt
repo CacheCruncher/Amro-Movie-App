@@ -6,13 +6,13 @@ import com.jawahir.amoro.data.local.dao.MovieDao
 import com.jawahir.amoro.data.local.entity.GenreEntity
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
-import com.jawahir.amoro.data.local.entity.MovieGenreCrossRef
+import com.jawahir.amoro.data.local.entity.MovieGenreMap
 
 @Database(
     entities = [
         MovieEntity::class,
         GenreEntity::class,
-        MovieGenreCrossRef::class,
+        MovieGenreMap::class,
         MovieFetchMeta::class
     ],
     version = 1,

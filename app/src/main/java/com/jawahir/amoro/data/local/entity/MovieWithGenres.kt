@@ -15,7 +15,7 @@ data class MovieWithGenres(
         parentColumn = "id",          // start from movie.id
         entityColumn = "id",          // match to genre.id
         associateBy = Junction(      // go through this bridge table
-            value = MovieGenreCrossRef::class,
+            value = MovieGenreMap::class,
             parentColumn = "movieId", // bridge col pointing to movie
             entityColumn = "genreId"  // bridge col pointing to genre
         )

@@ -8,7 +8,7 @@ import androidx.room.Transaction
 import com.jawahir.amoro.data.local.entity.GenreEntity
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
-import com.jawahir.amoro.data.local.entity.MovieGenreCrossRef
+import com.jawahir.amoro.data.local.entity.MovieGenreMap
 import com.jawahir.amoro.data.local.entity.MovieWithGenres
 import kotlinx.coroutines.flow.Flow
 
@@ -22,20 +22,13 @@ interface MovieDao {
     suspend fun insertMovies(movies: List<MovieEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovieGenreMap(crossRefs: List<MovieGenreCrossRef>)
+    suspend fun insertMovieGenreMap(crossRefs: List<MovieGenreMap>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveFetchTime(meta: MovieFetchMeta)
 
     @Query("SELECT fetchedAt FROM  movie_fetch_meta WHERE id = 0 ")
     suspend fun getLastFetchTime():Long?
-
-    // Single transaction to save movies + their genre links
-    @Transaction
-    suspend fun insertMoviesWithGenres(movies: List<MovieEntity>, crossRefs: List<MovieGenreCrossRef>) {
-        insertMovies(movies)
-        insertMovieGenreMap(crossRefs)
-    }
 
     // Returns Flow so UI observes live updates from DB
     @Transaction
@@ -48,10 +41,4 @@ interface MovieDao {
 
     @Query("SELECT * FROM genre_table")
     suspend fun getGenres(): List<GenreEntity>?
-
-    @Query("DELETE FROM movie_table")
-    suspend fun clearMovies()
-
-    @Query("DELETE FROM movie_genre_cross_ref")
-    suspend fun clearCrossRefs()
 }

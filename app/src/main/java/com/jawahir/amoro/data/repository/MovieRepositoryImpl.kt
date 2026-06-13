@@ -5,7 +5,7 @@ import com.jawahir.amoro.data.local.dao.MovieDao
 import com.jawahir.amoro.data.local.entity.GenreEntity
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
-import com.jawahir.amoro.data.local.entity.MovieGenreCrossRef
+import com.jawahir.amoro.data.local.entity.MovieGenreMap
 import com.jawahir.amoro.data.mapper.toDomain
 import com.jawahir.amoro.data.mapper.toDomainOrNull
 import com.jawahir.amoro.data.mapper.toEntity
@@ -129,12 +129,12 @@ class MovieRepositoryImpl @Inject constructor(
     private fun getMovieEntities(moviesToSave: List<Movie>): List<MovieEntity> =
         moviesToSave.map { it.toEntity() }
 
-    private fun getListMovieGenre(movies: List<Movie>): List<MovieGenreCrossRef> {
+    private fun getListMovieGenre(movies: List<Movie>): List<MovieGenreMap> {
         return movies.flatMap { movie ->
             val movieId = movie.id
             val genreList = movie.genres
             genreList.map { genre ->
-                MovieGenreCrossRef(movieId, genre.id)
+                MovieGenreMap(movieId, genre.id)
             }
         }
     }

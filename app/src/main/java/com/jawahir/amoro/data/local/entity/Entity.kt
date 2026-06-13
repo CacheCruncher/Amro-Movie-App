@@ -21,17 +21,18 @@ data class MovieEntity(
     val voteAverage: Double
 )
 
+@Entity(
+    tableName = "movie_genre_map",
+    primaryKeys = ["movieId", "genreId"],
+    indices = [Index("genreId")] // index on FK side for fast JOIN
+)
+data class MovieGenreMap(
+    val movieId: Int,
+    val genreId: Int
+)
+
 @Entity(tableName = "movie_fetch_meta")
 data class MovieFetchMeta(
     @PrimaryKey val id:Int = 0,
     val fetchedAt: Long
-)
-@Entity(
-    tableName = "movie_genre_cross_ref",
-    primaryKeys = ["movieId", "genreId"],
-    indices = [Index("genreId")] // index on FK side for fast JOIN
-)
-data class MovieGenreCrossRef(
-    val movieId: Int,
-    val genreId: Int
 )

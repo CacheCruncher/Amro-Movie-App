@@ -2,7 +2,7 @@ package com.jawahir.amoro.data.mapper
 
 import com.jawahir.amoro.data.local.entity.GenreEntity
 import com.jawahir.amoro.data.local.entity.MovieEntity
-import com.jawahir.amoro.data.local.entity.MovieGenreCrossRef
+import com.jawahir.amoro.data.local.entity.MovieGenreMap
 import com.jawahir.amoro.data.local.entity.MovieWithGenres
 import com.jawahir.amoro.domain.model.Genre
 import com.jawahir.amoro.domain.model.Movie
@@ -33,5 +33,5 @@ fun Movie.toEntity() = MovieEntity(
 )
 
 fun Movie.toCrossRefs() = genres.map { genre ->
-    MovieGenreCrossRef(movieId = id, genreId = genre.id)
+    MovieGenreMap(movieId = id, genreId = genre.id)
 }
