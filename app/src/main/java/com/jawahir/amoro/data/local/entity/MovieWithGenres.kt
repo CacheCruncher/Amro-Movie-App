@@ -23,7 +23,22 @@ data class MovieWithGenres(
     val genres: List<GenreEntity>
 )
 
+data class MovieDetailWithGenres(
+    @Embedded
+    val movieDetail: MovieDetailEntity,
 
+
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id",
+        associateBy = Junction(
+            value = MovieDetailGenreMap::class,
+            parentColumn = "movieDetailId",
+            entityColumn = "genreId"
+        )
+    )
+    val genres:List<GenreEntity>
+)
 /*
 *
 When this query runs, Room does this internally:

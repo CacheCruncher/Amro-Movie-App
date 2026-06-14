@@ -6,6 +6,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.jawahir.amoro.data.local.entity.GenreEntity
+import com.jawahir.amoro.data.local.entity.MovieDetailEntity
+import com.jawahir.amoro.data.local.entity.MovieDetailGenreMap
+import com.jawahir.amoro.data.local.entity.MovieDetailWithGenres
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
 import com.jawahir.amoro.data.local.entity.MovieGenreMap
@@ -25,6 +28,12 @@ interface MovieDao {
     suspend fun insertMovieGenreMap(crossRefs: List<MovieGenreMap>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMovieDetail(movieDetail: MovieDetailEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMovieDetailGenreMap(map: List<MovieDetailGenreMap>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun saveFetchTime(meta: MovieFetchMeta)
 
     @Query("SELECT fetchedAt FROM  movie_fetch_meta WHERE id = 0 ")
@@ -35,10 +44,11 @@ interface MovieDao {
     @Query("SELECT * FROM movie_table")
     fun getMoviesWithGenres(): Flow<List<MovieWithGenres>>
 
-    @Transaction
-    @Query("SELECT * FROM movie_table WHERE id = :movieId")
-    suspend fun getMovieWithGenres(movieId: Int): MovieWithGenres?
-
     @Query("SELECT * FROM genre_table")
-    suspend fun getGenres(): List<GenreEntity>?
+    suspend fun getGenres(): List<GenreEntity>
+
+    @Transaction
+    @Query("SELECT * FROM movie_detail_table WHERE id = :movieId")
+    suspend fun getMovieDetailWithGenres(movieId:Int): MovieDetailWithGenres?
+
 }

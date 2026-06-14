@@ -4,6 +4,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.jawahir.amoro.data.local.dao.MovieDao
 import com.jawahir.amoro.data.local.entity.GenreEntity
+import com.jawahir.amoro.data.local.entity.MovieDetailEntity
+import com.jawahir.amoro.data.local.entity.MovieDetailGenreMap
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
 import com.jawahir.amoro.data.local.entity.MovieGenreMap
@@ -13,7 +15,9 @@ import com.jawahir.amoro.data.local.entity.MovieGenreMap
         MovieEntity::class,
         GenreEntity::class,
         MovieGenreMap::class,
-        MovieFetchMeta::class
+        MovieFetchMeta::class,
+        MovieDetailEntity::class,
+        MovieDetailGenreMap::class
     ],
     version = 1,
     exportSchema = false

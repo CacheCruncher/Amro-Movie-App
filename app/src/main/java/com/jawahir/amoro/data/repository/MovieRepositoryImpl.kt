@@ -3,6 +3,7 @@ package com.jawahir.amoro.data.repository
 import android.util.Log
 import com.jawahir.amoro.data.local.dao.MovieDao
 import com.jawahir.amoro.data.local.entity.GenreEntity
+import com.jawahir.amoro.data.local.entity.MovieDetailGenreMap
 import com.jawahir.amoro.data.local.entity.MovieEntity
 import com.jawahir.amoro.data.local.entity.MovieFetchMeta
 import com.jawahir.amoro.data.local.entity.MovieGenreMap
@@ -62,7 +63,9 @@ class MovieRepositoryImpl @Inject constructor(
 
     private suspend fun fetchAndSaveMovies() {
         // step1: fetch genre: db first, network fallback
-        val genreMap = dao.getGenres()?.associate { it.id to it.name } ?: run {
+        var genreMap = dao.getGenres().associate { it.id to it.name }
+
+        if(genreMap.isEmpty()){
             val response = safeApiCall { apiService.getGenres() }
             when (response) {
                 is NetworkResult.Success -> {
@@ -71,7 +74,7 @@ class MovieRepositoryImpl @Inject constructor(
                         ?.toMap() ?: emptyMap()
                     if (map.isNotEmpty())
                         dao.insertGenres(map.map { (id, value) -> GenreEntity(id, value) })
-                    map
+                    genreMap = map
                 }
 
                 is NetworkResult.HttpError, is NetworkResult.NetworkError, is NetworkResult.UnknownError -> {
@@ -140,6 +143,16 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMovieDetail(movieId: Int): NetworkResult<MovieDetail> {
+        // fetch from db, fallback to network
+        val dbData = dao.getMovieDetailWithGenres(movieId)?.toDomain()
+        return if(dbData != null){
+            NetworkResult.Success(dbData)
+        } else{
+            fetchAndSaveMovieDetail(movieId)
+        }
+    }
+
+    suspend fun fetchAndSaveMovieDetail(movieId: Int): NetworkResult<MovieDetail> {
         val response = safeApiCall { apiService.getMovieDetail(movieId) }
         when (response) {
             is NetworkResult.Success -> {
@@ -147,10 +160,18 @@ class MovieRepositoryImpl @Inject constructor(
                     response.data.toDomainOrNull() ?: return NetworkResult.NetworkError(
                         Exception("Failed to parse move details")
                     )
+                dao.insertMovieDetail(movieDetail.toEntity())
+                dao.insertMovieDetailGenreMap(getListMovieDetailGenre(movieDetail))
                 return NetworkResult.Success(movieDetail)
             }
 
             is NetworkResult.HttpError, is NetworkResult.NetworkError, is NetworkResult.UnknownError -> return response
+        }
+    }
+
+    private fun getListMovieDetailGenre(movieDetail: MovieDetail): List<MovieDetailGenreMap> {
+        return movieDetail.genres.map {
+            MovieDetailGenreMap(movieDetail.id,it.id)
         }
     }
 }
